@@ -1,15 +1,101 @@
 {
     "gyeongree": {
         "channels": [
-            543080901051940904
+            543080901051940904,
+            543103293988143105
         ],
         "last_scrape": 1549550985.419328
     },
     "hf_dreamcatcher": {
         "channels": [
             543080901051940904,
-            543080901051940904
+            543080901051940904,
+            543103293988143105
         ],
         "last_scrape": 1549554107.751865
+    },
+    "miso_mmss": {
+        "channels": [
+            543103293988143105
+        ],
+        "last_scrape": 1549556533.292146
+    },
+    "chungha_official": {
+        "channels": [
+            543103293988143105
+        ],
+        "last_scrape": 1549627262.279492
+    },
+    "lalalalisa_m": {
+        "channels": [
+            543103293988143105
+        ],
+        "last_scrape": 1549576862.645199
+    },
+    "roses_are_rosie": {
+        "channels": [
+            543103293988143105
+        ],
+        "last_scrape": 1549556662.314973
+    },
+    "jennierubyjane": {
+        "channels": [
+            543103293988143105
+        ],
+        "last_scrape": 1549616802.254606
+    },
+    "sooyaaa__": {
+        "channels": [
+            543103293988143105
+        ],
+        "last_scrape": 1549617497.884238
+    },
+    "x_xellybabyx": {
+        "channels": [
+            543103293988143105
+        ],
+        "last_scrape": 1549630864.883706
+    },
+    "jeonghwa_0508": {
+        "channels": [
+            543103293988143105
+        ],
+        "last_scrape": 1549556838.889791
+    },
+    "ahnhani_92": {
+        "channels": [
+            543103293988143105
+        ],
+        "last_scrape": 1549617500.110692
+    },
+    "hyeliniseo": {
+        "channels": [
+            543103293988143105
+        ],
+        "last_scrape": 1549627267.726593
+    },
+    "official_g_i_dle": {
+        "channels": [
+            543103293988143105
+        ],
+        "last_scrape": 1549556927.917605
+    },
+    "exidofficial": {
+        "channels": [
+            543103293988143105
+        ],
+        "last_scrape": 1549557008.388923
+    },
+    "soul.g_heo": {
+            "channels": [
+                543103293988143105
+            ],
+            "last_scrape": 1549617989.640197
+        },
+    "sambahong": {
+        "channels": [
+            543103293988143105
+        ],
+        "last_scrape": 1549618010.465077
     }
 }
