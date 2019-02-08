@@ -12,6 +12,7 @@ import asyncio
 import psutil
 import math
 import time
+import os
 
 database = db.Database()
 
@@ -30,10 +31,14 @@ class Scraper:
 
     async def refresh_loop(self):
         while True:
-            await self.scrape_all_accounts()
-            sleep_for = 3600-datetime.datetime.now().minute*60-datetime.datetime.now().second+60
-            print("sleeping for", sleep_for)
-            await asyncio.sleep(sleep_for)
+            try:
+                await self.scrape_all_accounts()
+                sleep_for = 3600-datetime.datetime.now().minute*60-datetime.datetime.now().second+60
+                print("sleeping for", sleep_for)
+                await asyncio.sleep(sleep_for)
+            except Exception as e:
+                self.logger.error(f"Ignored exception in refresh loop:\n{e}")
+                continue
 
     def get_headers(self):
         headers = {"Accept": "*/*",
@@ -104,7 +109,7 @@ class Scraper:
                 database.set_attr("accounts", f"{username}.last_scrape", datetime.datetime.now().timestamp())
                 for channel_id in database.get_attr("accounts", f"{username}.channels"):
                     await self.send_post(self.client.get_channel(channel_id), shortcode, data)
-                    self.logger.info(logger.post_log(channel, username))
+                    self.logger.info(logger.post_log(self.client.get_channel(channel_id), username))
             else:
                 await self.send_post(channel, shortcode, data)
 
