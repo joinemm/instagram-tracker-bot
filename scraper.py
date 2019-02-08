@@ -63,44 +63,39 @@ class Scraper:
         data = json.loads(response.content.decode('utf-8'))
         return data
 
-    async def send_video(self, channel, shortcode, params):
-        url = f"https://www.instagram.com/p/{shortcode}"
-        response = requests.get(url, headers=self.get_headers())
-        tree = html.fromstring(response.content)
-        results = tree.xpath('//meta[@content]')
-        sources = []
-        for result in results:
-            try:
-                if result.attrib['property'] == "og:video":
-                    sources.append(result.attrib['content'])
-            except KeyError:
-                pass
-        if sources:
-            await channel.send(sources[0])
-
     async def send_post(self, channel, shortcode, params):
-        url = f"https://www.instagram.com/p/{shortcode}"
+        url = f"https://www.instagram.com/p/{shortcode}/?__a=1"
         response = requests.get(url, headers=self.get_headers())
-        soup = BeautifulSoup(response.text, 'html.parser')
-        script = soup.find_all('script')
-        sources = []
-        for i in range(len(script)):
-            urls = re.findall('"display_url":"(.*?)"', script[i].text)
-            if urls:
-                sources = urls
-        sources = list(set(sources))
+        data = json.loads(response.content.decode('utf-8'))['graphql']['shortcode_media']
+        medias = []
+        try:
+            for x in data['edge_sidecar_to_children']['edges']:
+                medias.append(x['node'])
+        except KeyError:
+            pass
 
-        if sources:
-            content = discord.Embed(color=discord.Color.magenta())
-            content.description = params.get('title')
-            content.set_author(name='@' + params.get('user'), url=url, icon_url=params.get('avatar_url'))
-            content.timestamp = datetime.datetime.utcfromtimestamp(params.get('timestamp'))
-            for url in sources:
-                content.set_image(url=url)
-                await channel.send(embed=content)
+        content = discord.Embed(color=discord.Color.magenta())
+        content.description = params.get('title')
+        content.set_author(name='@' + params.get('user'), url=url, icon_url=params.get('avatar_url'))
+        content.timestamp = datetime.datetime.utcfromtimestamp(params.get('timestamp'))
+
+        if medias:
+            # there are images
+            for medianode in medias:
+                if medianode.get('is_video'):
+                    await channel.send(embed=content)
+                    await channel.send(medianode.get('video_url'))
+                else:
+                    content.set_image(url=medianode.get('display_url'))
+                    await channel.send(embed=content)
                 content.description = None
+        elif data.get('is_video'):
+            # there is only video
+            await channel.send(embed=content)
+            await channel.send(data.get('video_url'))
+
         else:
-            print(f"Error sending post {shortcode}")
+            print(f"Error sending post {shortcode} :: No media found?")
             # await ctx.send("Found nothing, sorry!")
 
     async def get_posts(self, username, howmany=1, channel=None):
