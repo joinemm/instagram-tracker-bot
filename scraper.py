@@ -9,6 +9,9 @@ import datetime
 import logger
 import database as db
 import asyncio
+import psutil
+import math
+import time
 
 database = db.Database()
 
@@ -18,6 +21,7 @@ class Scraper:
     def __init__(self, client):
         self.client = client
         self.logger = logger.create_logger(__name__)
+        self.start_time = time.time()
         with open('useragents.txt', 'r') as f:
             self.useragents = [x.rstrip() for x in f.readlines()]
 
@@ -124,8 +128,9 @@ class Scraper:
         database.append_attr("accounts", f"{username}.channels", channel.id)
         if database.get_attr("accounts", f"{username}.last_scrape") is None:
             database.set_attr("accounts", f"{username}.last_scrape", datetime.datetime.now().timestamp())
-        await ctx.send(f"New posts by `{username}` will now be posted to {channel.mention}")
-        await self.get_posts(username, 1, channel)
+        await ctx.send(f"New posts by `{username}` will now be posted to {channel.mention}\n"
+                       f"https://www.instagram.com/{username}")
+        # await self.get_posts(username, 1, channel)
 
     @commands.command()
     async def remove(self, ctx, channelmention, username):
@@ -137,6 +142,37 @@ class Scraper:
 
         database.delete_key("accounts", f"{username}")
         await ctx.send(f"`{username}` removed from {channel.mention}")
+
+    @commands.command(aliases=["info"])
+    async def info(self, ctx):
+        up_time = time.time() - self.start_time
+        m, s = divmod(up_time, 60)
+        h, m = divmod(m, 60)
+        d, h = divmod(h, 24)
+        uptime_string = "%d days %d hours %d minutes %d seconds" % (d, h, m, s)
+
+        stime = time.time() - psutil.boot_time()
+        m, s = divmod(stime, 60)
+        h, m = divmod(m, 60)
+        d, h = divmod(h, 24)
+        system_uptime_string = "%d days %d hours %d minutes %d seconds" % (d, h, m, s)
+
+        mem = psutil.virtual_memory()
+
+        pid = os.getpid()
+        memory_use = psutil.Process(pid).memory_info()[0]
+
+        content = discord.Embed(title=f"Instagram Tracker | version 1.1")
+        content.set_thumbnail(url=self.client.user.avatar_url)
+
+        content.add_field(name="Bot process uptime", value=uptime_string)
+        content.add_field(name="System CPU Usage", value=f"{psutil.cpu_percent()}%")
+        content.add_field(name="System uptime", value=system_uptime_string)
+
+        content.add_field(name="System RAM Usage", value=f"{mem.percent}%")
+        content.add_field(name="Bot memory usage", value=f"{memory_use / math.pow(1024, 2):.2f}MB")
+
+        await ctx.send(embed=content)
 
     @commands.command()
     async def list(self, ctx, mention=None):

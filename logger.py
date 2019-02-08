@@ -23,7 +23,7 @@ def create_logger(name):
     return logger
 
 
-def post_log(channel, user, tweet_type):
+def post_log(channel, user):
     """Formats a nice log message for posts"""
 
     return f'post by {user} | >>> {channel.guild.name} :: {channel.name}'
