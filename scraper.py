@@ -13,6 +13,7 @@ import psutil
 import math
 import time
 import os
+from lxml import html
 
 database = db.Database()
 
@@ -62,6 +63,21 @@ class Scraper:
         data = json.loads(response.content.decode('utf-8'))
         return data
 
+    async def send_video(self, channel, shortcode, params):
+        url = f"https://www.instagram.com/p/{shortcode}"
+        response = requests.get(url, headers=self.get_headers())
+        tree = html.fromstring(response.content)
+        results = tree.xpath('//meta[@content]')
+        sources = []
+        for result in results:
+            try:
+                if result.attrib['property'] == "og:video":
+                    sources.append(result.attrib['content'])
+            except KeyError:
+                pass
+        if sources:
+            await channel.send(sources[0])
+
     async def send_post(self, channel, shortcode, params):
         url = f"https://www.instagram.com/p/{shortcode}"
         response = requests.get(url, headers=self.get_headers())
@@ -95,7 +111,7 @@ class Scraper:
             posts.append(x)
         for i in range(howmany):
             timestamp = posts[i]['node']['taken_at_timestamp']
-            if channel is None and timestamp < database.get_attr("accounts", f"{username}.last_scrape", 0):
+            if channel is None and timestamp < database.get_attr("accounts", [username, "last_scrape"], 0):
                 self.logger.info(f"{username} : no more new posts")
                 return
             try:
@@ -106,15 +122,15 @@ class Scraper:
             user = posts[i]['node']['owner']['username']
             data = {"title": title, "user": user, "avatar_url": avatar, "timestamp": timestamp}
             if channel is None:
-                database.set_attr("accounts", f"{username}.last_scrape", datetime.datetime.now().timestamp())
-                for channel_id in database.get_attr("accounts", f"{username}.channels"):
+                database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
+                for channel_id in database.get_attr("accounts", [username, "channels"]):
                     await self.send_post(self.client.get_channel(channel_id), shortcode, data)
                     self.logger.info(logger.post_log(self.client.get_channel(channel_id), username))
             else:
                 await self.send_post(channel, shortcode, data)
 
     async def scrape_all_accounts(self):
-        for username in database.get_attr("accounts", "."):
+        for username in database.get_attr("accounts", []):
             await self.get_posts(username, 6)
 
     @commands.command()
@@ -130,9 +146,9 @@ class Scraper:
             await ctx.send("Invalid channel")
             return
 
-        database.append_attr("accounts", f"{username}.channels", channel.id)
-        if database.get_attr("accounts", f"{username}.last_scrape") is None:
-            database.set_attr("accounts", f"{username}.last_scrape", datetime.datetime.now().timestamp())
+        database.append_attr("accounts", [username, "channels"], channel.id)
+        if database.get_attr("accounts", [username, "last_scrape"]) is None:
+            database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
         await ctx.send(f"New posts by `{username}` will now be posted to {channel.mention}\n"
                        f"https://www.instagram.com/{username}")
         # await self.get_posts(username, 1, channel)
@@ -145,7 +161,7 @@ class Scraper:
             await ctx.send("Invalid channel")
             return
 
-        database.delete_key("accounts", f"{username}")
+        database.delete_key("accounts", [username])
         await ctx.send(f"`{username}` removed from {channel.mention}")
 
     @commands.command(aliases=["info"])
@@ -191,9 +207,9 @@ class Scraper:
 
         pages = []
         rows = []
-        for username in database.get_attr("accounts", "."):
+        for username in database.get_attr("accounts", []):
             channel_mentions = []
-            for channel_id in database.get_attr("accounts", f"{username}.channels"):
+            for channel_id in database.get_attr("accounts", [username, "channels"]):
                 channel = ctx.guild.get_channel(channel_id)
                 if channel is not None:
                     if channel_limit is not None and not channel == channel_limit:

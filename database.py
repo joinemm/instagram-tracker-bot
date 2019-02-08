@@ -85,33 +85,29 @@ class Database:
     def __init__(self):
         self.datafiles = {"accounts": Datafile('data/accounts.json')}
 
-    def get_attr(self, database, attr, default=None):
+    def get_attr(self, database, keys, default=None):
         datafile = self.datafiles[database]
-        if attr == ".":
+        if len(keys) == 0:
             return datafile.get_data()
         else:
-            return deep_get(datafile.get_data(), attr, default)
+            return deep_get(datafile.get_data(), validate(keys), default)
 
-    def set_attr(self, database, attr, value, increment=False):
+    def set_attr(self, database, keys, value, increment=False):
         datafile = self.datafiles[database]
-        keys = attr.split(".")
-        datafile.set_data(keys, value, increment)
+        datafile.set_data(validate(keys), value, increment)
         return True
 
-    def append_attr(self, database, attr, value, duplicate=True):
+    def append_attr(self, database, keys, value, duplicate=True):
         datafile = self.datafiles[database]
-        keys = attr.split(".")
-        return datafile.append_data(keys, value, duplicate)
+        return datafile.append_data(validate(keys), value, duplicate)
 
-    def delete_attr(self, database, attr, value):
+    def delete_attr(self, database, keys, value):
         datafile = self.datafiles[database]
-        keys = attr.split(".")
-        return datafile.delete_data(keys, value)
+        return datafile.delete_data(validate(keys), value)
 
-    def delete_key(self, database, attr):
+    def delete_key(self, database, keys):
         datafile = self.datafiles[database]
-        keys = attr.split(".")
-        return datafile.del_data(keys)
+        return datafile.del_data(validate(keys))
 
 
 def create_key(d, key):
@@ -130,7 +126,7 @@ def deep_get(dictionary, keys, default=None):
             except (ValueError, IndexError):
                 return default
 
-    return reduce(getter, keys.split("."), dictionary)
+    return reduce(getter, keys, dictionary)
 
 
 def order_dict(data):
@@ -141,3 +137,7 @@ def order_dict(data):
         else:
             result[k] = v
     return result
+
+
+def validate(keys):
+    return [str(k) for k in keys]
