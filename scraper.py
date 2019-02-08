@@ -144,7 +144,7 @@ class Scraper:
         await ctx.send(f"`{username}` removed from {channel.mention}")
 
     @commands.command(aliases=["info"])
-    async def info(self, ctx):
+    async def status(self, ctx):
         up_time = time.time() - self.start_time
         m, s = divmod(up_time, 60)
         h, m = divmod(m, 60)
