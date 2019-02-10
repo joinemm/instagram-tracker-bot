@@ -3,8 +3,6 @@ import json
 import random
 import discord
 from discord.ext import commands
-from bs4 import BeautifulSoup
-import re
 import datetime
 import logger
 import database as db
@@ -13,7 +11,6 @@ import psutil
 import math
 import time
 import os
-from lxml import html
 
 database = db.Database()
 
@@ -72,7 +69,7 @@ class Scraper:
             for x in data['edge_sidecar_to_children']['edges']:
                 medias.append(x['node'])
         except KeyError:
-            pass
+            medias.append(data)
 
         content = discord.Embed(color=discord.Color.magenta())
         content.description = params.get('title')
@@ -89,10 +86,6 @@ class Scraper:
                     content.set_image(url=medianode.get('display_url'))
                     await channel.send(embed=content)
                 content.description = None
-        elif data.get('is_video'):
-            # there is only video
-            await channel.send(embed=content)
-            await channel.send(data.get('video_url'))
 
         else:
             print(f"Error sending post {shortcode} :: No media found?")
