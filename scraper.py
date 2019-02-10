@@ -110,10 +110,14 @@ class Scraper:
             user = posts[i]['node']['owner']['username']
             data = {"title": title, "user": user, "avatar_url": avatar, "timestamp": timestamp}
             if channel is None:
-                database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
                 for channel_id in database.get_attr("accounts", [username, "channels"]):
-                    await self.send_post(self.client.get_channel(channel_id), shortcode, data)
-                    self.logger.info(logger.post_log(self.client.get_channel(channel_id), username))
+                    thischannel = self.client.get_channel(channel_id)
+                    if thischannel is not None:
+                        await self.send_post(thischannel, shortcode, data)
+                        self.logger.info(logger.post_log(thischannel, username))
+                    else:
+                        self.logger.error(f"ERROR: Couldn't find channel [{channel_id}]")
+                database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
             else:
                 await self.send_post(channel, shortcode, data)
 
