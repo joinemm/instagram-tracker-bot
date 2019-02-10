@@ -61,8 +61,8 @@ class Scraper:
         return data
 
     async def send_post(self, channel, shortcode, params):
-        url = f"https://www.instagram.com/p/{shortcode}/?__a=1"
-        response = requests.get(url, headers=self.get_headers())
+        url = f"https://www.instagram.com/p/{shortcode}"
+        response = requests.get(url + "/?__a=1", headers=self.get_headers())
         data = json.loads(response.content.decode('utf-8'))['graphql']['shortcode_media']
         medias = []
         try:
