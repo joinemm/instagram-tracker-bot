@@ -20,14 +20,17 @@ class Scraper:
     def __init__(self, client):
         self.client = client
         self.logger = logger.create_logger(__name__)
-        self.start_time = time.time()
         with open('useragents.txt', 'r') as f:
             self.useragents = [x.rstrip() for x in f.readlines()]
+        self.start_time = time.time()
+        self.running = False
 
     async def on_ready(self):
-        await self.refresh_loop()
+        if not self.running:
+            await self.refresh_loop()
 
     async def refresh_loop(self):
+        self.running = True
         while True:
             try:
                 await self.scrape_all_accounts()
