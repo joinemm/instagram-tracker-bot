@@ -83,7 +83,8 @@ class Datafile:
 class Database:
 
     def __init__(self):
-        self.datafiles = {"accounts": Datafile('data/accounts.json')}
+        self.datafiles = {"accounts": Datafile('data/accounts.json'),
+                          "hashtags": Datafile('data/hashtags.json')}
 
     def get_attr(self, database, keys, default=None):
         datafile = self.datafiles[database]

@@ -63,6 +63,12 @@ class Scraper:
         data = json.loads(response.content.decode('utf-8'))
         return data
 
+    def get_hashtag(self, hashtag):
+        url = f"https://www.instagram.com/explore/tags/{hashtag}/?__a=1"
+        response = requests.get(url, headers=self.get_headers())
+        data = json.loads(response.content.decode('utf-8'))
+        return data
+
     async def send_post(self, channel, shortcode, params):
         url = f"https://www.instagram.com/p/{shortcode}"
         response = requests.get(url + "/?__a=1", headers=self.get_headers())
@@ -74,9 +80,11 @@ class Scraper:
         except KeyError:
             medias.append(data)
 
+        avatar_url = data['owner']['profile_pic_url']
+        username = data['owner']['username']
         content = discord.Embed(color=discord.Color.magenta())
         content.description = params.get('title')
-        content.set_author(name='@' + params.get('user'), url=url, icon_url=params.get('avatar_url'))
+        content.set_author(name='@' + username, url=url, icon_url=avatar_url)
         content.timestamp = datetime.datetime.utcfromtimestamp(params.get('timestamp'))
 
         if medias:
@@ -96,7 +104,6 @@ class Scraper:
 
     async def get_posts(self, username, howmany=1, channel=None):
         data = self.get_user_posts(username)
-        avatar = data['graphql']['user']['profile_pic_url']
         posts = []
         for x in data['graphql']['user']['edge_owner_to_timeline_media']['edges']:
             posts.append(x)
@@ -110,8 +117,7 @@ class Scraper:
             except IndexError:
                 title = None
             shortcode = posts[i]['node']['shortcode']
-            user = posts[i]['node']['owner']['username']
-            data = {"title": title, "user": user, "avatar_url": avatar, "timestamp": timestamp}
+            data = {"title": title, "timestamp": timestamp}
             if channel is None:
                 for channel_id in database.get_attr("accounts", [username, "channels"]):
                     thischannel = self.client.get_channel(channel_id)
@@ -124,14 +130,49 @@ class Scraper:
             else:
                 await self.send_post(channel, shortcode, data)
 
+    async def get_hashtag_posts(self, hashtag, howmany=1, channel=None):
+        data = self.get_hashtag(hashtag)
+        posts = []
+        for x in data['graphql']['hashtag']['edge_hashtag_to_media']['edges']:
+            posts.append(x)
+        for i in range(howmany):
+            timestamp = posts[i]['node']['taken_at_timestamp']
+            if channel is None and timestamp < database.get_attr("hashtags", [hashtag, "last_scrape"], 0):
+                self.logger.info(f"#{hashtag} : no more new posts")
+                return
+            try:
+                title = posts[i]['node']['edge_media_to_caption']['edges'][0]['node']['text']
+            except IndexError:
+                title = None
+            shortcode = posts[i]['node']['shortcode']
+            data = {"title": title, "timestamp": timestamp}
+            if channel is None:
+                for channel_id in database.get_attr("hashtags", [hashtag, "channels"]):
+                    thischannel = self.client.get_channel(channel_id)
+                    if thischannel is not None:
+                        await self.send_post(thischannel, shortcode, data)
+                        self.logger.info(logger.post_log(thischannel, hashtag))
+                    else:
+                        self.logger.error(f"ERROR: Couldn't find channel [{channel_id}]")
+                database.set_attr("hashtags", [hashtag, "last_scrape"], datetime.datetime.now().timestamp())
+            else:
+                await self.send_post(channel, shortcode, data)
+
     async def scrape_all_accounts(self):
         for username in database.get_attr("accounts", []):
-            await self.get_posts(username, 6)
+            await self.get_posts(username, 15)
+        for hashtag in database.get_attr("hashtags", []):
+            await self.get_hashtag_posts(hashtag, 30)
 
     @commands.command()
     async def get(self, ctx, username, howmany=1):
         self.logger.info(logger.command_log(ctx))
         await self.get_posts(username, howmany, ctx.channel)
+
+    @commands.command()
+    async def gettag(self, ctx, hashtag, howmany=1):
+        self.logger.info(logger.command_log(ctx))
+        await self.get_hashtag_posts(hashtag, howmany, ctx.channel)
 
     @commands.command()
     async def add(self, ctx, channelmention, username):
@@ -141,12 +182,32 @@ class Scraper:
             await ctx.send("Invalid channel")
             return
 
+        if channel.id in database.get_attr("accounts", [username, "channels"], []):
+            await ctx.send("This account is already followed on this channel!")
+            return
+
         database.append_attr("accounts", [username, "channels"], channel.id)
         if database.get_attr("accounts", [username, "last_scrape"]) is None:
             database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
         await ctx.send(f"New posts by `{username}` will now be posted to {channel.mention}\n"
                        f"https://www.instagram.com/{username}")
-        # await self.get_posts(username, 1, channel)
+
+    @commands.command()
+    async def addtag(self, ctx, channelmention, hashtag):
+        self.logger.info(logger.command_log(ctx))
+        channel = channel_from_mention(ctx.guild, channelmention)
+        if channel is None:
+            await ctx.send("Invalid channel")
+            return
+
+        if channel.id in database.get_attr("hashtags", [hashtag, "channels"], []):
+            await ctx.send("This hashtag is already followed on this channel!")
+            return
+
+        database.append_attr("hashtags", [hashtag, "channels"], channel.id)
+        if database.get_attr("hashtags", [hashtag, "last_scrape"]) is None:
+            database.set_attr("hashtags", [hashtag, "last_scrape"], datetime.datetime.now().timestamp())
+        await ctx.send(f"New posts in `#{hashtag}` will now be posted to {channel.mention}")
 
     @commands.command()
     async def remove(self, ctx, channelmention, username):
