@@ -108,11 +108,11 @@ class Scraper:
         for x in data['graphql']['user']['edge_owner_to_timeline_media']['edges']:
             posts.append(x)
 
-        database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
         for i in range(howmany):
             timestamp = posts[i]['node']['taken_at_timestamp']
             if channel is None and timestamp < database.get_attr("accounts", [username, "last_scrape"], 0):
                 self.logger.info(f"{username} : no more new posts")
+                database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
                 return
             try:
                 title = posts[i]['node']['edge_media_to_caption']['edges'][0]['node']['text']
@@ -130,6 +130,7 @@ class Scraper:
                         self.logger.error(f"ERROR: Couldn't find channel [{channel_id}]")
             else:
                 await self.send_post(channel, shortcode, data)
+        database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
 
     async def get_hashtag_posts(self, hashtag, howmany=1, channel=None):
         data = self.get_hashtag(hashtag)
@@ -137,11 +138,11 @@ class Scraper:
         for x in data['graphql']['hashtag']['edge_hashtag_to_media']['edges']:
             posts.append(x)
 
-        database.set_attr("hashtags", [hashtag, "last_scrape"], datetime.datetime.now().timestamp())
         for i in range(howmany):
             timestamp = posts[i]['node']['taken_at_timestamp']
             if channel is None and timestamp < database.get_attr("hashtags", [hashtag, "last_scrape"], 0):
                 self.logger.info(f"#{hashtag} : no more new posts")
+                database.set_attr("hashtags", [hashtag, "last_scrape"], datetime.datetime.now().timestamp())
                 return
             try:
                 title = posts[i]['node']['edge_media_to_caption']['edges'][0]['node']['text']
@@ -159,7 +160,8 @@ class Scraper:
                         self.logger.error(f"ERROR: Couldn't find channel [{channel_id}]")
             else:
                 await self.send_post(channel, shortcode, data)
-
+        database.set_attr("hashtags", [hashtag, "last_scrape"], datetime.datetime.now().timestamp())
+        
     async def scrape_all_accounts(self):
         for username in database.get_attr("accounts", []):
             await self.get_posts(username, 15)
