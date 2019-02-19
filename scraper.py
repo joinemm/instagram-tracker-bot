@@ -107,6 +107,8 @@ class Scraper:
         posts = []
         for x in data['graphql']['user']['edge_owner_to_timeline_media']['edges']:
             posts.append(x)
+
+        database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
         for i in range(howmany):
             timestamp = posts[i]['node']['taken_at_timestamp']
             if channel is None and timestamp < database.get_attr("accounts", [username, "last_scrape"], 0):
@@ -126,7 +128,6 @@ class Scraper:
                         self.logger.info(logger.post_log(thischannel, username))
                     else:
                         self.logger.error(f"ERROR: Couldn't find channel [{channel_id}]")
-                database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
             else:
                 await self.send_post(channel, shortcode, data)
 
@@ -135,6 +136,8 @@ class Scraper:
         posts = []
         for x in data['graphql']['hashtag']['edge_hashtag_to_media']['edges']:
             posts.append(x)
+            
+        database.set_attr("hashtags", [hashtag, "last_scrape"], datetime.datetime.now().timestamp())
         for i in range(howmany):
             timestamp = posts[i]['node']['taken_at_timestamp']
             if channel is None and timestamp < database.get_attr("hashtags", [hashtag, "last_scrape"], 0):
@@ -154,7 +157,6 @@ class Scraper:
                         self.logger.info(logger.post_log(thischannel, hashtag))
                     else:
                         self.logger.error(f"ERROR: Couldn't find channel [{channel_id}]")
-                database.set_attr("hashtags", [hashtag, "last_scrape"], datetime.datetime.now().timestamp())
             else:
                 await self.send_post(channel, shortcode, data)
 
