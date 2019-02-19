@@ -161,7 +161,7 @@ class Scraper:
             else:
                 await self.send_post(channel, shortcode, data)
         database.set_attr("hashtags", [hashtag, "last_scrape"], datetime.datetime.now().timestamp())
-        
+
     async def scrape_all_accounts(self):
         for username in database.get_attr("accounts", []):
             await self.get_posts(username, 15)
