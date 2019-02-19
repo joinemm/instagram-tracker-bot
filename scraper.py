@@ -136,7 +136,7 @@ class Scraper:
         posts = []
         for x in data['graphql']['hashtag']['edge_hashtag_to_media']['edges']:
             posts.append(x)
-            
+
         database.set_attr("hashtags", [hashtag, "last_scrape"], datetime.datetime.now().timestamp())
         for i in range(howmany):
             timestamp = posts[i]['node']['taken_at_timestamp']
