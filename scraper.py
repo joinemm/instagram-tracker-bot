@@ -83,7 +83,7 @@ class Scraper:
         avatar_url = data['owner']['profile_pic_url']
         username = data['owner']['username']
         content = discord.Embed(color=discord.Color.magenta())
-        content.description = params.get('title')
+        content.description = params.get('title')[:1999]
         content.set_author(name='@' + username, url=url, icon_url=avatar_url)
         content.timestamp = datetime.datetime.utcfromtimestamp(params.get('timestamp'))
 
@@ -168,10 +168,10 @@ class Scraper:
 
     async def scrape_all_accounts(self):
         for username in database.get_attr("accounts", []):
-            await self.get_posts(username, 15)
+            await self.get_posts(username, 12)
             database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
         for hashtag in database.get_attr("hashtags", []):
-            await self.get_hashtag_posts(hashtag, 30)
+            await self.get_hashtag_posts(hashtag, 25)
             database.set_attr("hashtags", [hashtag, "last_scrape"], datetime.datetime.now().timestamp())
 
     @commands.command()
