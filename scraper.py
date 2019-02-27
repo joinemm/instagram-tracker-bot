@@ -109,16 +109,19 @@ class Scraper:
             posts.append(x)
 
         for i in range(howmany):
-            timestamp = posts[i]['node']['taken_at_timestamp']
-            if channel is None and timestamp < database.get_attr("accounts", [username, "last_scrape"], 0):
-                self.logger.info(f"{username} : no more new posts")
-                database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
-                return
             try:
-                title = posts[i]['node']['edge_media_to_caption']['edges'][0]['node']['text']
+                timestamp = posts[i]['node']['taken_at_timestamp']
+                if channel is None and timestamp < database.get_attr("accounts", [username, "last_scrape"], 0):
+                    self.logger.info(f"{username} : no more new posts")
+                    return
+                try:
+                    title = posts[i]['node']['edge_media_to_caption']['edges'][0]['node']['text']
+                except IndexError:
+                    title = None
+                shortcode = posts[i]['node']['shortcode']
             except IndexError:
-                title = None
-            shortcode = posts[i]['node']['shortcode']
+                self.logger.error(f"IndexError: i={i}, user={username}")
+                return
             data = {"title": title, "timestamp": timestamp}
             if channel is None:
                 for channel_id in database.get_attr("accounts", [username, "channels"]):
@@ -130,7 +133,6 @@ class Scraper:
                         self.logger.error(f"ERROR: Couldn't find channel [{channel_id}]")
             else:
                 await self.send_post(channel, shortcode, data)
-        database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
 
     async def get_hashtag_posts(self, hashtag, howmany=1, channel=None):
         data = self.get_hashtag(hashtag)
@@ -139,16 +141,19 @@ class Scraper:
             posts.append(x)
 
         for i in range(howmany):
-            timestamp = posts[i]['node']['taken_at_timestamp']
-            if channel is None and timestamp < database.get_attr("hashtags", [hashtag, "last_scrape"], 0):
-                self.logger.info(f"#{hashtag} : no more new posts")
-                database.set_attr("hashtags", [hashtag, "last_scrape"], datetime.datetime.now().timestamp())
-                return
             try:
-                title = posts[i]['node']['edge_media_to_caption']['edges'][0]['node']['text']
+                timestamp = posts[i]['node']['taken_at_timestamp']
+                if channel is None and timestamp < database.get_attr("hashtags", [hashtag, "last_scrape"], 0):
+                    self.logger.info(f"#{hashtag} : no more new posts")
+                    return
+                try:
+                    title = posts[i]['node']['edge_media_to_caption']['edges'][0]['node']['text']
+                except IndexError:
+                    title = None
+                shortcode = posts[i]['node']['shortcode']
             except IndexError:
-                title = None
-            shortcode = posts[i]['node']['shortcode']
+                self.logger.error(f"IndexError: i={i}, hash=#{hashtag}")
+                return
             data = {"title": title, "timestamp": timestamp}
             if channel is None:
                 for channel_id in database.get_attr("hashtags", [hashtag, "channels"]):
@@ -160,13 +165,14 @@ class Scraper:
                         self.logger.error(f"ERROR: Couldn't find channel [{channel_id}]")
             else:
                 await self.send_post(channel, shortcode, data)
-        database.set_attr("hashtags", [hashtag, "last_scrape"], datetime.datetime.now().timestamp())
 
     async def scrape_all_accounts(self):
         for username in database.get_attr("accounts", []):
             await self.get_posts(username, 15)
+            database.set_attr("accounts", [username, "last_scrape"], datetime.datetime.now().timestamp())
         for hashtag in database.get_attr("hashtags", []):
             await self.get_hashtag_posts(hashtag, 30)
+            database.set_attr("hashtags", [hashtag, "last_scrape"], datetime.datetime.now().timestamp())
 
     @commands.command()
     async def get(self, ctx, username, howmany=1):
