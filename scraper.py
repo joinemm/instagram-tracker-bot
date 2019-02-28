@@ -32,10 +32,10 @@ class Scraper:
     async def refresh_loop(self):
         self.running = True
         while True:
-            # try:
-            await self.scrape_all_accounts()
-            #except Exception as e:
-            #    self.logger.error(f"Ignored exception in refresh loop:\n{e}")
+            try:
+                await self.scrape_all_accounts()
+            except Exception as e:
+                self.logger.error(f"Ignored exception in refresh loop:\n{e}")
 
             sleep_for = 3600 - datetime.datetime.now().minute * 60 - datetime.datetime.now().second + 60
             print("sleeping for", sleep_for)
@@ -83,7 +83,9 @@ class Scraper:
         avatar_url = data['owner']['profile_pic_url']
         username = data['owner']['username']
         content = discord.Embed(color=discord.Color.magenta())
-        content.description = params.get('title')[:1999]
+        content.description = params.get('title')
+        if content.description is not None:
+            content.description = content.description[:1999]
         content.set_author(name='@' + username, url=url, icon_url=avatar_url)
         content.timestamp = datetime.datetime.utcfromtimestamp(params.get('timestamp'))
 
@@ -121,9 +123,6 @@ class Scraper:
                 shortcode = posts[i]['node']['shortcode']
             except IndexError:
                 self.logger.error(f"IndexError: i={i}, user={username}")
-                return
-            except TypeError as e:
-                self.logger.error(f"TypeError\n{e}")
                 return
             data = {"title": title, "timestamp": timestamp}
             if channel is None:
