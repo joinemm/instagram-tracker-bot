@@ -124,7 +124,7 @@ class Scraper:
                 return
             except TypeError as e:
                 self.logger.error(f"TypeError\n{e}")
-                return 
+                return
             data = {"title": title, "timestamp": timestamp}
             if channel is None:
                 for channel_id in database.get_attr("accounts", [username, "channels"]):
