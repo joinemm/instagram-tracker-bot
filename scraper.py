@@ -32,10 +32,10 @@ class Scraper:
     async def refresh_loop(self):
         self.running = True
         while True:
-            try:
-                await self.scrape_all_accounts()
-            except Exception as e:
-                self.logger.error(f"Ignored exception in refresh loop:\n{e}")
+            # try:
+            await self.scrape_all_accounts()
+            #except Exception as e:
+            #    self.logger.error(f"Ignored exception in refresh loop:\n{e}")
 
             sleep_for = 3600 - datetime.datetime.now().minute * 60 - datetime.datetime.now().second + 60
             print("sleeping for", sleep_for)
