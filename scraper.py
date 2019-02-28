@@ -34,12 +34,12 @@ class Scraper:
         while True:
             try:
                 await self.scrape_all_accounts()
-                sleep_for = 3600-datetime.datetime.now().minute*60-datetime.datetime.now().second+60
-                print("sleeping for", sleep_for)
-                await asyncio.sleep(sleep_for)
             except Exception as e:
                 self.logger.error(f"Ignored exception in refresh loop:\n{e}")
-                continue
+
+            sleep_for = 3600 - datetime.datetime.now().minute * 60 - datetime.datetime.now().second + 60
+            print("sleeping for", sleep_for)
+            await asyncio.sleep(sleep_for)
 
     def get_headers(self):
         headers = {"Accept": "*/*",
@@ -122,6 +122,9 @@ class Scraper:
             except IndexError:
                 self.logger.error(f"IndexError: i={i}, user={username}")
                 return
+            except TypeError as e:
+                self.logger.error(f"TypeError\n{e}")
+                return 
             data = {"title": title, "timestamp": timestamp}
             if channel is None:
                 for channel_id in database.get_attr("accounts", [username, "channels"]):
